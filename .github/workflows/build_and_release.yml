@@ -1,0 +1,149 @@
+name: Build and release to PyPI
+on:
+  workflow_dispatch:
+    inputs:
+      apbs-release-tag:
+        description: APBS version to build
+        required: true
+        default: 3.4.1
+      version-tag:
+        description: Python package version to release to PyPI (without 'v')
+        required: true
+        default: 3.4.1.post1
+      dry-run:
+        description: Dry run
+        type: boolean
+        default: false
+      exclude-types:
+        description: Commit types to exclude from the changelog
+        required: false
+        default: build,docs,style,other
+
+jobs:
+  build-all-platforms:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install uv --break-system-packages
+          uv tool install build
+          uv tool install wheel
+          uv tool install huggingface_hub
+          huggingface-cli download --repo-type dataset --local-dir data Deargen/py-apbs-binary
+      - name: Build python wheels
+        run: |
+          bash build_python.sh ${{ inputs.apbs-release-tag }} ${{ inputs.version-tag }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: dist/*.whl
+
+  test-ubuntu:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        # python-version: ['3.8']
+        # os: [ubuntu-20.04]
+    needs: [build-all-platforms]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          name: wheels
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test wheel
+        run: |
+          pip install uv --break-system-packages
+          uv venv
+          source .venv/bin/activate
+          uv pip install -r requirements_test.txt
+          uv pip install dist/*-manylinux*_x86_64.whl
+          pytest
+
+  test-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        os: [macos-12, macos-13, macos-14, macos-15]
+        # os: [macos-14, macos-15]
+    needs: [build-all-platforms]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          name: wheels
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test wheel
+        run: |
+          pip install uv --break-system-packages
+          uv venv --python python3
+          source .venv/bin/activate
+          uv pip install -r requirements_test.txt
+          if [[ ${{ matrix.os }} == 'macos-12' ]] || [[ ${{ matrix.os }} == 'macos-13' ]]; then
+            uv pip install dist/*-macosx_*_x86_64.whl
+          else
+            uv pip install dist/*-macosx_*_arm64.whl
+          fi
+          pytest
+
+  # test-windows:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+  #       os: [windows-2019, windows-2022]
+  #   needs: [build-all-platforms]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         path: dist
+  #         name: wheels
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: Test wheel
+  #       shell: pwsh
+  #       run: |
+  #         pip install uv --break-system-packages
+  #         uv venv
+  #         .venv\Scripts\activate
+  #         uv pip install -r requirements_test.txt
+  #         uv pip install (get-item dist/*-win_amd64.whl)
+  #         pytest
+
+  commit-changelog-and-release-github:
+    needs: [test-ubuntu, test-macos]
+    uses: deargen/workflows/.github/workflows/commit-changelog-and-release.yml@master
+    with:
+      version-tag: ${{ github.event.inputs.version-tag }}
+      dry-run: ${{ github.event.inputs.dry-run == 'true' }}
+      changelog-path: docs/CHANGELOG.md
+      exclude-types: ${{ github.event.inputs.exclude-types }}
+
+  release:
+    name: Release
+    if: ${{ github.event.inputs.dry-run == 'false' }}
+    runs-on: ubuntu-24.04
+    needs: [commit-changelog-and-release-github]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          name: wheels
+      - name: Build and upload to PyPI
+        run: |
+          pip install uv --break-system-packages
+          uv tool install twine
+          twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }} --non-interactive
