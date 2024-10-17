@@ -132,8 +132,8 @@ jobs:
       changelog-path: docs/CHANGELOG.md
       exclude-types: ${{ github.event.inputs.exclude-types }}
 
-  release:
-    name: Release
+  release-to-pypi:
+    name: Release to PyPI
     if: ${{ github.event.inputs.dry-run == 'false' }}
     runs-on: ubuntu-24.04
     needs: [commit-changelog-and-release-github]
