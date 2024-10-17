@@ -43,7 +43,10 @@ Go to Github Actions and run the `Build and Release` workflow.
 
 Version rule:
 
-3.4.1.post2: 3.4.1 is the APBS version, postN can increase with the changes of the package and the builds.
+3.4.1.2:
+
+- 3.4.1 is the APBS version
+- the last digit (.2) is the patch/build number. It increases as we rebuild the wheels with different configurations or update the python API.
 
 
 ### Running locally
@@ -73,7 +76,7 @@ Build four wheels on all platforms. Basically it will put the binaries in the `s
 ```bash
 # first arg: APBS version to find in `data/` (i.e. data/apbs-3.4.1/APBS-3.4.1.Linux)
 # second arg: wheel version
-bash build_python.sh 3.4.1 3.4.1.post2
+bash build_python.sh 3.4.1 3.4.1.2
 ```
 
 Test the wheel

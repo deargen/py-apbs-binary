@@ -1,7 +1,8 @@
 if [ "$#" -ne 2 ]; then
     echo "Build python wheels in a temp directory."
     echo "Usage: $0 <apbs_version> <py_package_version>"
-    echo "Example: $0 3.4.1 3.4.1.post4"
+    echo "Example: $0 3.4.1 3.4.1.4"
+    echo "The python package version should be the same as the APBS version plus a patch (build) version."
     exit 1
 fi
 

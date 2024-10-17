@@ -7,9 +7,9 @@ on:
         required: true
         default: 3.4.1
       version-tag:
-        description: Python package version to release to PyPI (without 'v')
+        description: Python package version to release to PyPI (without 'v', last digit is the build number)
         required: true
-        default: 3.4.1.post1
+        default: 3.4.1.1
       dry-run:
         description: Dry run
         type: boolean
