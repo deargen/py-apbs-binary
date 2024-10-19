@@ -22,7 +22,7 @@ popen_apbs("--help")  # like subprocess.Popen(["apbs", "-h"])
 run_apbs("")  # like subprocess.run(["apbs"])
 
 # Pass a list of arguments
-run_apbs(["-Trim", "input.pdb"])
+run_apbs(["--output-format=xml", "input.in"])
 
 # Run multivalue
 run_multivalue(...)
