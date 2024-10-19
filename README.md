@@ -13,18 +13,23 @@ pip install apbs-binary
 ```
 
 ```python
-from apbs_binary import APBS_BIN_PATH, MULTIVALUE_BIN_PATH, apbs, multivalue, process_run
+from apbs_binary import run_apbs, popen_apbs, run_multivalue, popen_multivalue
 
-# Run apbs
-print(APBS_BIN_PATH)
-apbs("--help")
+run_apbs("--help")  # like subprocess.run(["apbs", "-h"])
+popen_apbs("--help")  # like subprocess.Popen(["apbs", "-h"])
+
+# For no-argument case, pass an empty string
+run_apbs("")  # like subprocess.run(["apbs"])
+
+# Pass a list of arguments
+run_apbs(["-Trim", "input.pdb"])
 
 # Run multivalue
-print(MULTIVALUE_BIN_PATH)
-multivalue()
+run_multivalue(...)
+popen_multivalue(...)
 ```
 
-The other tools are also available, but not all of them have the function wrappers. Use as `apbs_binary.process_run("analysis", "--help")` for example.
+The other tools are also available. Use as `apbs_binary.run_analysis("--help")` for example.
 
 Supported platforms:
 
@@ -33,7 +38,8 @@ Supported platforms:
 
 > [!NOTE]
 > Installing the package does NOT put the binary in $PATH.  
-> Instead, the API will tell you where it is located.
+> If you need to directly execute the binary, you can execute `apbs_binary.APBS_BIN_PATH` on Linux.
+> For macOS, the environment variable `DYLD_LIBRARY_PATH` must be set to `apbs_binary.LIB_DIR`.
 
 ## 👨‍💻️ Maintenance Notes
 
