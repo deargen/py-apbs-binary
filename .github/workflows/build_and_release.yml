@@ -137,6 +137,8 @@ jobs:
     if: ${{ github.event.inputs.dry-run == 'false' }}
     runs-on: ubuntu-24.04
     needs: [commit-changelog-and-release-github]
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -145,5 +147,4 @@ jobs:
       - name: Build and upload to PyPI
         run: |
           pip install uv --break-system-packages
-          uv tool install twine
-          twine upload dist/* -u __token__ -p ${{ secrets.PYPI_API_TOKEN }} --non-interactive
+          uv publish
